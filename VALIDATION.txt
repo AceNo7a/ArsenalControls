@@ -1,0 +1,40 @@
+Arsenal Controls 1.0.0-beta.1 validation - 2026-11-10
+
+RELEASE CHECKS
+PASS: Controller and complete distribution parse/compile with official Luau.
+PASS: StyLua 2.6.0 formatting check for controller and bundled library.
+PASS: Rebuilding twice produces identical distribution bytes.
+PASS: Archive file list, SHA-256 manifest and archive contents verified.
+PASS: No internal test API implementation, private dump, recording, username,
+      user filesystem path or executor binary in the package.
+
+MADIUM LIVE SMOKE CHECKS (WINDOWS, ARSENAL)
+PASS: Standalone release loads and reports version 1.0.0-beta.1.
+PASS: Ten active feature toggles default off; team/wall/target-lock filters on.
+PASS: ESP creates player visuals; Stop removes them (10 objects to zero).
+PASS: F8 sent through Madium stops ESP and clears its visuals.
+PASS: Enabling silent aim disables camera aim.
+PASS: About > Reset settings restores modified filters and turns aim/ESP off.
+PASS: About > Unload removes lifecycle handles, UI and ESP resources.
+PASS: Two consecutive executions settle at one UI and one ESP container.
+PASS: No controller warnings or runtime errors during the completed checks.
+      One test selector initially missed the reset button; the corrected
+      selector exercised the actual Reset settings button successfully.
+
+INHERITED V6 CHECKS (BEFORE RELEASE CLEANUP)
+Camera tracking observed with wall check temporarily disabled for measurement.
+Local speed override restored the captured value; noclip restored cached
+collisions; flight constraints were created and removed. Silent cast override
+installed only when enabled and was removed when disabled. Local recoil
+restoration was checked. These are local behavior checks, not server promises.
+
+LIMITS
+The release smoke checks ran in one connected Madium client. The character
+was dead for portions of the checks; no new full combat/autoplay match was
+completed for this package. Silent-aim damage and unlimited server-accepted
+ammo are unverified. Other executors, all maps, long sessions and future
+Arsenal updates have not been covered. No universal FPS improvement is claimed.
+The unsupported-universe guard was inspected but not live-tested in another
+game. Public-beta labeling reflects these limits.
+
+Packaging does not publish this release to a website or repository.

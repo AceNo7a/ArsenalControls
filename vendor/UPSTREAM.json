@@ -1,0 +1,12 @@
+{
+  "name": "SlimeUI",
+  "author": "SlimexDev",
+  "version": "1.2.0",
+  "repository": "https://github.com/SlimexDev/SlimeUI",
+  "commit": "80c4cae89d849ce84bb19a450c78989a94af944d",
+  "license": "MIT",
+  "local_changes": [
+    "Disable continuous decoration and rim motion in reduced-motion mode",
+    "Namespace the window lifecycle and GUI name for Arsenal Controls"
+  ]
+}

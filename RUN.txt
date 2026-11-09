@@ -1,0 +1,15 @@
+Arsenal Controls - public beta loader
+
+Run this one line in your executor while in Arsenal:
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/AceNo7a/ArsenalControls/main/dist/ArsenalControls.lua"))()
+
+The main URL follows updates committed to main. The currently tested version
+is 1.0.0-beta.1. All active features start off. Right Shift shows/hides the UI;
+F8 stops all features. About > Unload removes the controller.
+
+For a fixed copy of the first release, replace main in the URL with:
+5e2de7a659b4c125959f53f33e5c08f1976c68a8
+
+README.txt covers usage. VALIDATION.txt records testing and limitations.
+Silent-aim damage and unlimited server-accepted ammo remain unverified.

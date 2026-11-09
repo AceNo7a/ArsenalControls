@@ -1,0 +1,16 @@
+1.0.0-beta.1 - 2026-11-10
+
+First packaged public beta, based on optimized development build V6.
+- Readable formatted source, deterministic offline build and pinned SlimeUI.
+- Versioned UI, About tab, credits, reset settings and unload controls.
+- F8 stops every active feature, including ESP, and clears its visuals.
+- Unsupported-game check and bounded startup wait for expected client modules.
+- Feature-readiness checks and duplicate runtime-error notification suppression.
+- Independent cleanup of movement overrides, hooks, events and render binding.
+- Internal test API and performance counters removed from the release.
+- Reduced decorative motion and cached target, visibility and character lookups.
+- Silent aim and client ammo refill explicitly marked experimental.
+
+Retained: aim, FOV/smoothing, target lock, team/wall filters, auto fire,
+autoplay, ESP, local recoil/ammo options, flight, noclip and speed override.
+No kill-all, invulnerability, server vulnerability claim or damage guarantee.
