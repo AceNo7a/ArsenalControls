@@ -1,3 +1,18 @@
+Arsenal Controls 1.0.0-beta.2 validation - 2026-11-10
+
+Current change: startup compatibility, not universal weapon integration.
+PASS: Official Luau compilation of controller and standalone distribution.
+PASS: StyLua formatting check for controller and vendor.
+PASS: Executed startup regression harness with a non-Arsenal universe and
+      no weapon modules: UI creation is reached without module lookup/wait.
+PASS: Same harness with Arsenal and missing modules: UI creation is reached
+      without waiting for weapon modules.
+PASS: Deterministic rebuild and updated package SHA-256 manifest.
+The harness stops at UI creation using a stub UI; it does not replace a live
+game test. Cross-game aiming, movement and custom character systems were not
+live-tested in this revision. Previous checks below apply to beta.1 only.
+
+--- Previous release validation ---
 Arsenal Controls 1.0.0-beta.1 validation - 2026-11-10
 
 RELEASE CHECKS

@@ -1,12 +1,16 @@
-Arsenal Controls 1.0.0-beta.1
+Arsenal Controls 1.0.0-beta.2
 
-A public beta of the SlimeUI interface and client controls for Arsenal.
+A public beta of the SlimeUI interface and Roblox client controls.
+The UI no longer requires Arsenal. Core aim, ESP and movement use standard
+Humanoid characters; custom character systems may need additional support.
+Weapon integration remains specific to Arsenal: auto fire, autoplay, silent
+aim, recoil and client ammo controls are unavailable without its adapter.
 Tested with Madium on Windows; other executors are unverified. Arsenal client
 updates may break compatibility. All active features start disabled, with
 team check, wall check and target lock enabled as filters.
 
 GETTING STARTED
-1. Join Arsenal and wait for its client to load.
+1. Join a Roblox game. Arsenal weapon integration connects when available.
 2. Open dist/ArsenalControls.lua and run the entire file in your executor.
 3. Enable only the features you want. Weapon-dependent controls become
    available after the weapon adapter connects; see Visual for status.
@@ -40,8 +44,9 @@ vendor/SlimeUI.lua: bundled interface library, with local modifications.
 vendor/UPSTREAM.json: pinned upstream revision and modification notes.
 licenses/SlimeUI-MIT.txt: required upstream license.
 LICENSE: controller license. CHANGELOG.txt and VALIDATION.txt: scope and checks.
-No remote Lua downloads, key verification or telemetry are enabled in this
-build. The upstream library can request Roblox avatar thumbnails and uses
+The optional loader downloads dist/ArsenalControls.lua from this repository.
+The standalone build does not download additional Lua, use key verification
+or enable telemetry. The upstream library can request Roblox avatar thumbnails and uses
 normal Roblox assets. Its unused key-system/config APIs remain in vendor code.
 Private game dumps, account names, test recordings and executor tools are not
 included. Do not redistribute modified vendor code without its MIT notice.

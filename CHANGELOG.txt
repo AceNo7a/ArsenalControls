@@ -1,3 +1,11 @@
+1.0.0-beta.2 - 2026-11-10
+
+- Remove the Arsenal-only startup restriction.
+- Open the UI immediately, even when Arsenal modules are absent.
+- Connect optional weapon adapters asynchronously, only in Arsenal.
+- Use ordinary Humanoid health in other games and explain unavailable weapons.
+- Preserve the existing public loader URL.
+
 1.0.0-beta.1 - 2026-11-10
 
 First packaged public beta, based on optimized development build V6.

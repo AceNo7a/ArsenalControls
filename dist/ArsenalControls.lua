@@ -1,4 +1,4 @@
--- Arsenal Controls 1.0.0-beta.1 | public beta
+-- Arsenal Controls 1.0.0-beta.2 | public beta
 -- Source and instructions are included in the release archive.
 -- Controller and bundled SlimeUI licenses follow.
 --[====[
@@ -5588,39 +5588,18 @@ end)()
 
 -- Arsenal Controls: client controller. SlimeUI is supplied by build.py.
 -- Default aim activation: Always. Right Shift toggles the window; F8 stops all features.
-local VERSION = "1.0.0-beta.1"
+local VERSION = "1.0.0-beta.2"
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local Run = game:GetService("RunService")
 local me = Players.LocalPlayer
 local env = (getgenv and getgenv()) or _G
--- Refuse unsupported games before replacing an existing controller.
+-- Core controls are game-independent; only weapon integration is game-specific.
 if not Run:IsClient() or not me then
 	warn("[Arsenal Controls] A local Roblox client is required.")
 	return
 end
-if game.GameId ~= 111958650 then
-	warn("[Arsenal Controls] This release supports the Arsenal universe only.")
-	return
-end
-local deadline = os.clock() + 15
-local function modulesPresent()
-	local client = game:GetService("ReplicatedFirst"):FindFirstChild("Client")
-	local utility = client and client:FindFirstChild("Utility")
-	local modules = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
-	return utility
-		and utility:FindFirstChild("Input")
-		and utility:FindFirstChild("State")
-		and modules
-		and modules:FindFirstChild("GeneralFunctions")
-end
-while not modulesPresent() and os.clock() < deadline do
-	task.wait(0.1)
-end
-if not modulesPresent() then
-	warn("[Arsenal Controls] Supported client modules did not become available. Rejoin and retry.")
-	return
-end
+local isArsenal = game.GameId == 111958650
 if type(env.ArsenalControls) == "table" and type(env.ArsenalControls.Destroy) == "function" then
 	pcall(env.ArsenalControls.Destroy)
 end
@@ -5661,8 +5640,8 @@ local function record(player)
 	local r = records[player]
 	local now = os.clock()
 	if not r or r.character ~= char or now >= r.expires then
-		local stats = player:FindFirstChild("NRPBS")
-		local state = player:FindFirstChild("Status")
+		local stats = isArsenal and player:FindFirstChild("NRPBS")
+		local state = isArsenal and player:FindFirstChild("Status")
 		r = {
 			character = char,
 			expires = now + 0.25,
@@ -5769,7 +5748,12 @@ setSetting = function(key, value)
 		if controls[key] then
 			controls[key]:Set(false, true)
 		end
-		Window:Notify("Feature unavailable", "The weapon adapter is not ready. Check status or rejoin.", 4)
+		Window:Notify(
+			"Feature unavailable",
+			isArsenal and "The weapon adapter is not ready. Check status or rejoin."
+				or "This game has no supported weapon adapter. Camera aim, ESP and movement remain available.",
+			4
+		)
 		return
 	end
 	settings[key] = value
@@ -5868,7 +5852,8 @@ combat:Button("Stop all features (F8)", function()
 end)
 local visual = Window:Tab("Visual", "eye", "Highlights and status")
 toggle(visual, "Player ESP", "esp")
-local statusLabel = visual:Label("Connecting weapon input...")
+local statusLabel =
+	visual:Label(isArsenal and "Connecting weapon input..." or "Core controls ready; weapon adapter unavailable")
 local lastStatus
 local status = setmetatable({}, {
 	__newindex = function(_, key, value)
@@ -5906,6 +5891,10 @@ about:Paragraph(
 about:Paragraph(
 	"Beta features",
 	"Silent aim is limited to hitscan. Client ammo refill does not guarantee unlimited server-accepted shots. Autoplay paths are map-dependent."
+)
+about:Paragraph(
+	"Game compatibility",
+	"The UI can load in other games. Camera aim, ESP and movement use standard Roblox characters; weapon features require Arsenal's adapter."
 )
 about:Button("Reset settings", function()
 	if resetSettings then
@@ -6030,7 +6019,7 @@ local function updateESP(dt)
 			end
 			local camera = workspace.CurrentCamera
 			local distance = camera and (camera.CFrame.Position - root.Position).Magnitude or 0
-			local stats = player:FindFirstChild("NRPBS")
+			local stats = isArsenal and player:FindFirstChild("NRPBS")
 			local hp = stats and stats:FindFirstChild("Health")
 			local caption = string.format(
 				"%s (@%s)\n%d studs | %d HP",
@@ -6091,12 +6080,30 @@ local function updateWeaponOptions()
 		end
 	end
 end
--- Use the live game's already loaded modules, never the decompiled copies.
-task.spawn(function()
-	local ok, result = pcall(function()
+-- Optional weapon integration never blocks core UI startup.
+local function weaponModules()
+	local deadline = os.clock() + 15
+	while alive do
 		local client = game:GetService("ReplicatedFirst"):FindFirstChild("Client")
-		assert(client and client:FindFirstChild("Utility"), "Arsenal client not found")
-		local utility = client.Utility
+		local utility = client and client:FindFirstChild("Utility")
+		local modules = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
+		local general = modules and modules:FindFirstChild("GeneralFunctions")
+		if utility and utility:FindFirstChild("Input") and utility:FindFirstChild("State") and general then
+			return utility, general
+		end
+		if os.clock() >= deadline then
+			return
+		end
+		task.wait(0.1)
+	end
+end
+task.spawn(function()
+	if not isArsenal then
+		return
+	end
+	local ok, result = pcall(function()
+		local utility = weaponModules()
+		assert(utility, "Arsenal weapon modules did not become available")
 		local input = require(utility.Input)
 		local state = require(utility.State)
 		assert(type(input.Trigger) == "function" and input.Binds.Mouse1, "Weapon input changed")
@@ -6201,8 +6208,13 @@ end
 -- Replace only the shared exported cast entry, leaving the global raycast APIs
 -- untouched. Restrict redirection to initial hitscan rays from the firing module.
 task.spawn(function()
+	if not isArsenal then
+		return
+	end
 	local ok, err = pcall(function()
-		local module = require(game:GetService("ReplicatedStorage").Modules.GeneralFunctions)
+		local _, general = weaponModules()
+		assert(general, "Arsenal hitscan module did not become available")
+		local module = require(general)
 		assert(type(module.cast) == "function", "Hitscan cast unavailable")
 		if not alive then
 			return
@@ -6757,7 +6769,7 @@ local function renderStep(dt)
 		or not root
 		or camera.CameraType ~= Enum.CameraType.Custom
 		or overPanel
-		or me:GetAttribute("BossRushDowned")
+		or (isArsenal and me:GetAttribute("BossRushDowned"))
 	if
 		gameState
 		and (rawget(gameState, "died") or rawget(gameState, "roundend") or rawget(gameState, "deployed") == false)
@@ -6780,10 +6792,10 @@ local function renderStep(dt)
 	if os.clock() >= nextStatus then
 		nextStatus = os.clock() + 0.3
 		status.Text = adapterError and "Stopped: see console for details"
-			or not gameInput and "Connecting weapon input..."
 			or paused and ("Paused: " .. statusState.pauseReason)
 			or settings.autoplay and ("Autoplay: " .. statusState.phase)
 			or settings.enabled and ("Camera aim: " .. (aimHeld and (statusState.target or "searching") or "hold right mouse"))
+			or not gameInput and (isArsenal and "Connecting weapon input..." or "Core controls ready; weapon adapter unavailable")
 			or "Weapon input ready"
 	end
 	statusState.paused = not not paused
