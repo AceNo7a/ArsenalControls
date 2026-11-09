@@ -1,16 +1,16 @@
-Arsenal Controls - public beta loader
+Arsenal Controls 1.0.0-beta.3 - main loader
 
-Run this one line in your executor while in a Roblox game:
+Run this line in your executor while in a Roblox game:
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/AceNo7a/ArsenalControls/main/dist/ArsenalControls.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/AceNo7a/ArsenalControls/main/mainloader.lua"))()
 
-The main URL follows updates committed to main. The current version
-is 1.0.0-beta.2. The UI no longer requires Arsenal. Weapon integration still
-requires Arsenal; cross-game controls depend on standard characters. All active features start off. Right Shift shows/hides the UI;
-F8 stops all features. About > Unload removes the controller.
+mainloader.lua and loader.lua now resolve GitHub's main reference and fetch
+the script at that exact commit. The standalone main/dist/ArsenalControls.lua
+URL remains available, but GitHub can temporarily cache older branch content.
 
-For a fixed copy of the first release, replace main in the URL with:
-5e2de7a659b4c125959f53f33e5c08f1976c68a8
+All active features start off. Right Shift shows/hides the UI; F8 stops all.
+Outside Arsenal, auto fire uses an equipped standard Tool. Autoplay can equip
+the first backpack Tool. Select Pulse/Hold to suit the Tool and adjust autoplay
+stop distance for melee or ranged use. Custom weapon systems may need adapters.
 
-README.txt covers usage. VALIDATION.txt records testing and limitations.
-Silent-aim damage and unlimited server-accepted ammo remain unverified.
+README.txt covers usage; VALIDATION.txt records checks and limitations.

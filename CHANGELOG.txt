@@ -1,3 +1,14 @@
+1.0.0-beta.3 - 2026-11-10
+
+- Enable auto fire/autoplay outside Arsenal through a standard Tool adapter.
+- Add Pulse/Hold modes, pulse interval and generic autoplay stop distance.
+- Equip a backpack Tool for autoplay; pause movement without an available Tool.
+- Release owned activation on stop, lost target, focus loss and character loss.
+- Preserve manual mouse input and Tool cooldowns; back off failed activations.
+- Keep Arsenal-specific silent aim, recoil and ammo integration separate.
+- Update loader.lua and add mainloader.lua to resolve main before downloading.
+- Include source, compatibility notes and the updated package manifest.
+
 1.0.0-beta.2 - 2026-11-10
 
 - Remove the Arsenal-only startup restriction.

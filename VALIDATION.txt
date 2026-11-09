@@ -1,55 +1,39 @@
-Arsenal Controls 1.0.0-beta.2 validation - 2026-11-10
+Arsenal Controls 1.0.0-beta.3 validation - 2026-11-10
 
-Current change: startup compatibility, not universal weapon integration.
-PASS: Official Luau compilation of controller and standalone distribution.
-PASS: StyLua formatting check for controller and vendor.
-PASS: Executed startup regression harness with a non-Arsenal universe and
-      no weapon modules: UI creation is reached without module lookup/wait.
-PASS: Same harness with Arsenal and missing modules: UI creation is reached
-      without waiting for weapon modules.
-PASS: Deterministic rebuild and updated package SHA-256 manifest.
-The harness stops at UI creation using a stub UI; it does not replace a live
-game test. Cross-game aiming, movement and custom character systems were not
-live-tested in this revision. Previous checks below apply to beta.1 only.
+CURRENT CHECKS
+PASS: Official Luau compilation of standalone build, Tool adapter and loader.
+PASS: StyLua formatting for controller, adapter and loader.
+PASS: Tool adapter behavior fixtures: pulse timing, Hold activation/release,
+      manual input preservation, disabled Tool cooldown, missing Handle,
+      optional equip, character loss, idempotent release and failure backoff.
+PASS: Controller fixtures: generic auto fire/autoplay can enable without
+      Arsenal state; Arsenal-only options remain gated. Generic firing
+      delegates correctly, and cancels for blocked sight, camera misalignment,
+      missing targets and requests to stop.
+PASS: Startup fixtures with an unrelated game and Arsenal modules missing.
+PASS: Loader fixtures: resolve a commit and fetch immutable script; reject
+      malformed references and report network/API failures.
+PASS: Madium direct-file smoke load reports beta.3, creates the new controls,
+      and accepts stop-all. Features were left disabled.
+PASS: Deterministic rebuild and archive/manifest verification.
 
---- Previous release validation ---
-Arsenal Controls 1.0.0-beta.1 validation - 2026-11-10
+LIVE LIMITATIONS
+A local Roblox Tool activation fixture was attempted through Madium but
+skipped because the character was not alive. No full cross-game combat match
+has been completed for this release. The behavior fixtures use mock objects;
+they verify the adapter/controller logic, not an arbitrary game's server.
+Support applies to standard Humanoids and weapons using Tool activation.
+Cursor-based targeting, custom weapon input, reload/ammo, custom teams, NPC
+targets and server damage acceptance are game-specific and unverified.
+Arsenal keeps its existing adapter. Silent aim, recoil and client ammo remain
+Arsenal-specific; previous beta limitations still apply.
 
-RELEASE CHECKS
-PASS: Controller and complete distribution parse/compile with official Luau.
-PASS: StyLua 2.6.0 formatting check for controller and bundled library.
-PASS: Rebuilding twice produces identical distribution bytes.
-PASS: Archive file list, SHA-256 manifest and archive contents verified.
-PASS: No internal test API implementation, private dump, recording, username,
-      user filesystem path or executor binary in the package.
+MAIN LOADER
+Both loader.lua and mainloader.lua resolve main with GitHub's public refs
+API, then fetch dist/ArsenalControls.lua by commit SHA. They do not silently
+fall back to an older version when resolution fails. The public API may be
+rate-limited. Existing raw branch URLs can be temporarily cached by GitHub.
 
-MADIUM LIVE SMOKE CHECKS (WINDOWS, ARSENAL)
-PASS: Standalone release loads and reports version 1.0.0-beta.1.
-PASS: Ten active feature toggles default off; team/wall/target-lock filters on.
-PASS: ESP creates player visuals; Stop removes them (10 objects to zero).
-PASS: F8 sent through Madium stops ESP and clears its visuals.
-PASS: Enabling silent aim disables camera aim.
-PASS: About > Reset settings restores modified filters and turns aim/ESP off.
-PASS: About > Unload removes lifecycle handles, UI and ESP resources.
-PASS: Two consecutive executions settle at one UI and one ESP container.
-PASS: No controller warnings or runtime errors during the completed checks.
-      One test selector initially missed the reset button; the corrected
-      selector exercised the actual Reset settings button successfully.
-
-INHERITED V6 CHECKS (BEFORE RELEASE CLEANUP)
-Camera tracking observed with wall check temporarily disabled for measurement.
-Local speed override restored the captured value; noclip restored cached
-collisions; flight constraints were created and removed. Silent cast override
-installed only when enabled and was removed when disabled. Local recoil
-restoration was checked. These are local behavior checks, not server promises.
-
-LIMITS
-The release smoke checks ran in one connected Madium client. The character
-was dead for portions of the checks; no new full combat/autoplay match was
-completed for this package. Silent-aim damage and unlimited server-accepted
-ammo are unverified. Other executors, all maps, long sessions and future
-Arsenal updates have not been covered. No universal FPS improvement is claimed.
-The unsupported-universe guard was inspected but not live-tested in another
-game. Public-beta labeling reflects these limits.
-
-Packaging does not publish this release to a website or repository.
+REFERENCE DOCUMENTATION
+https://create.roblox.com/docs/reference/engine/classes/Tool
+https://docs.github.com/en/rest/git/refs#get-a-reference

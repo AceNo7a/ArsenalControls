@@ -1,4 +1,4 @@
--- Arsenal Controls 1.0.0-beta.2 | public beta
+-- Arsenal Controls 1.0.0-beta.3 | public beta
 -- Source and instructions are included in the release archive.
 -- Controller and bundled SlimeUI licenses follow.
 --[====[
@@ -5586,9 +5586,101 @@ end
 return SlimeUI
 end)()
 
+local ToolAdapter = (function()
+-- Standard Tool integration. Games using custom weapons need a separate adapter.
+local ToolAdapter = {}
+
+function ToolAdapter.new(player, input, clock)
+	clock = clock or os.clock
+	local self = {}
+	local activeTool, releaseAt = nil, 0
+	local nextShot, nextEquip, retryAt = 0, 0, 0
+
+	local function manualInput()
+		return input:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+	end
+
+	function self:Release()
+		local tool = activeTool
+		activeTool, releaseAt = nil, 0
+		if tool and tool.Parent and not manualInput() then
+			pcall(tool.Deactivate, tool)
+		end
+	end
+
+	function self:GetTool(autoEquip)
+		local character = player.Character
+		if not character then
+			return nil
+		end
+		local equipped = character:FindFirstChildOfClass("Tool")
+		if equipped then
+			return equipped
+		end
+		local now = clock()
+		if not autoEquip or now < nextEquip then
+			return nil
+		end
+		nextEquip = now + 0.5
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local backpack = player:FindFirstChildOfClass("Backpack")
+		local tool = backpack and backpack:FindFirstChildOfClass("Tool")
+		if humanoid and humanoid.Health > 0 and tool then
+			pcall(humanoid.EquipTool, humanoid, tool)
+			if tool.Parent == character then
+				return tool
+			end
+		end
+		return nil
+	end
+
+	function self:Step(autoEquip, interval, mode)
+		local now = clock()
+		if manualInput() then
+			self:Release()
+			return "manual input"
+		end
+		local tool = self:GetTool(autoEquip)
+		if activeTool and (activeTool ~= tool or (mode ~= "Hold" and now >= releaseAt)) then
+			self:Release()
+		end
+		if not tool then
+			return "equip a Tool"
+		end
+		if activeTool == tool then
+			return "holding Tool"
+		end
+		if tool.RequiresHandle and not tool:FindFirstChild("Handle") then
+			return "Tool needs a Handle"
+		end
+		if not tool.Enabled then
+			return "Tool cooldown"
+		end
+		if now < retryAt or now < nextShot then
+			return "Tool interval"
+		end
+		local ok = pcall(tool.Activate, tool)
+		if not ok then
+			-- A failing custom Tool should not generate a per-frame retry storm.
+			retryAt = now + 1
+			pcall(tool.Deactivate, tool)
+			return "Tool activation failed"
+		end
+		activeTool = tool
+		releaseAt = now + 0.04
+		nextShot = now + math.clamp(interval, 0.05, 1)
+		return "Tool activated"
+	end
+
+	return self
+end
+
+return ToolAdapter
+end)()
+
 -- Arsenal Controls: client controller. SlimeUI is supplied by build.py.
 -- Default aim activation: Always. Right Shift toggles the window; F8 stops all features.
-local VERSION = "1.0.0-beta.2"
+local VERSION = "1.0.0-beta.3"
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local Run = game:GetService("RunService")
@@ -5608,6 +5700,7 @@ if type(env.SimpleAimPanel) == "function" then
 	pcall(env.SimpleAimPanel)
 end
 env.SimpleAimPanelAPI = nil
+local genericTools = not isArsenal and ToolAdapter.new(me, UIS) or nil
 
 local DEFAULTS = table.freeze({
 	enabled = false,
@@ -5628,6 +5721,9 @@ local DEFAULTS = table.freeze({
 	speedEnabled = false,
 	speed = 36,
 	flySpeed = 60,
+	toolInterval = 0.15,
+	toolMode = "Pulse",
+	combatDistance = 22,
 })
 local settings = table.clone(DEFAULTS)
 
@@ -5743,7 +5839,7 @@ setSetting = function(key, value)
 	if not alive then
 		return
 	end
-	local needsInput = key == "autofire" or key == "autoplay" or key == "norecoil" or key == "infammo"
+	local needsInput = key == "norecoil" or key == "infammo" or (isArsenal and (key == "autofire" or key == "autoplay"))
 	if value and ((needsInput and not gameState) or (key == "silent" and not castWrapper)) then
 		if controls[key] then
 			controls[key]:Set(false, true)
@@ -5751,7 +5847,7 @@ setSetting = function(key, value)
 		Window:Notify(
 			"Feature unavailable",
 			isArsenal and "The weapon adapter is not ready. Check status or rejoin."
-				or "This game has no supported weapon adapter. Camera aim, ESP and movement remain available.",
+				or "This option requires Arsenal's weapon adapter. Standard Tool auto fire and autoplay remain available.",
 			4
 		)
 		return
@@ -5843,6 +5939,23 @@ aimTab:Paragraph(
 local combat = Window:Tab("Combat", "swords", "Normal firing and automated movement")
 toggle(combat, "Auto fire", "autofire", "Fires on alignment while camera aim or silent aim is active.")
 toggle(combat, "Autoplay", "autoplay", "Navigates, aims and fires. Disables flight.")
+combat:Section("Other games: standard Tools")
+controls.toolMode = combat:Dropdown({
+	Name = "Tool fire mode",
+	Options = { "Pulse", "Hold" },
+	Default = settings.toolMode,
+	Callback = function(value)
+		settings.toolMode = value
+		stopAutomation()
+	end,
+})
+slider(combat, "Tool fire interval", "toolInterval", 0.05, 1, 0.05, " s")
+slider(combat, "Autoplay stop distance", "combatDistance", 3, 40, 1, " studs")
+combat:Paragraph(
+	"Tool compatibility",
+	"Auto fire uses the equipped Tool. Autoplay equips the first backpack Tool if needed. Pulse repeats activation; Hold supports held activation. Custom weapons may need an adapter."
+)
+combat:Section("Arsenal weapon options")
 toggle(combat, "No recoil", "norecoil")
 toggle(combat, "Client ammo refill (beta)", "infammo", "Experimental client state; server acceptance is unverified.")
 combat:Button("Stop all features (F8)", function()
@@ -5852,8 +5965,7 @@ combat:Button("Stop all features (F8)", function()
 end)
 local visual = Window:Tab("Visual", "eye", "Highlights and status")
 toggle(visual, "Player ESP", "esp")
-local statusLabel =
-	visual:Label(isArsenal and "Connecting weapon input..." or "Core controls ready; weapon adapter unavailable")
+local statusLabel = visual:Label(isArsenal and "Connecting weapon input..." or "Standard Tool adapter ready")
 local lastStatus
 local status = setmetatable({}, {
 	__newindex = function(_, key, value)
@@ -5894,7 +6006,7 @@ about:Paragraph(
 )
 about:Paragraph(
 	"Game compatibility",
-	"The UI can load in other games. Camera aim, ESP and movement use standard Roblox characters; weapon features require Arsenal's adapter."
+	"Other games use standard Roblox characters and Tool activation for auto fire/autoplay. Custom weapon frameworks may need an adapter. Silent aim, recoil and ammo options require Arsenal."
 )
 about:Button("Reset settings", function()
 	if resetSettings then
@@ -6278,6 +6390,9 @@ syncCast = function()
 end
 local ownsFire, nextTrigger, nextReload = false, 0, 0
 local function releaseFire()
+	if genericTools then
+		genericTools:Release()
+	end
 	if ownsFire and gameInput then
 		-- Leave a physically held mouse button under the player's control.
 		if not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
@@ -6323,7 +6438,7 @@ end)
 local function driveTo(player, enemyRoot, h, root, visible)
 	local distance = (enemyRoot.Position - root.Position).Magnitude
 	local gun = gameState and rawget(gameState, "gun")
-	local stopDistance = gun and gun:FindFirstChild("Melee") and 4 or 22
+	local stopDistance = genericTools and settings.combatDistance or (gun and gun:FindFirstChild("Melee") and 4 or 22)
 	if distance <= stopDistance and visible then
 		if movementOwned then
 			h:Move(Vector3.zero, false)
@@ -6453,7 +6568,7 @@ local function driveTo(player, enemyRoot, h, root, visible)
 end
 local function updateFire(head, camera, requested)
 	statusState.fireReason = "idle"
-	if not requested or not gameInput or not gameState then
+	if not requested or (not genericTools and (not gameInput or not gameState)) then
 		releaseFire()
 		return
 	end
@@ -6465,6 +6580,16 @@ local function updateFire(head, camera, requested)
 	if not clearSight(camera, head) then
 		statusState.fireReason = "blocked"
 		releaseFire()
+		return
+	end
+	if genericTools then
+		local direction = head.Position - camera.CFrame.Position
+		if direction.Magnitude <= 0 or camera.CFrame.LookVector:Dot(direction.Unit) < math.cos(math.rad(2)) then
+			statusState.fireReason = "aligning"
+			releaseFire()
+			return
+		end
+		statusState.fireReason = genericTools:Step(settings.autoplay, settings.toolInterval, settings.toolMode)
 		return
 	end
 	local gun = rawget(gameState, "gun")
@@ -6793,9 +6918,10 @@ local function renderStep(dt)
 		nextStatus = os.clock() + 0.3
 		status.Text = adapterError and "Stopped: see console for details"
 			or paused and ("Paused: " .. statusState.pauseReason)
-			or settings.autoplay and ("Autoplay: " .. statusState.phase)
+			or settings.autoplay and ("Autoplay: " .. statusState.phase .. " | " .. (statusState.fireReason or "idle"))
+			or genericTools and settings.autofire and ("Tool auto fire: " .. (statusState.fireReason or "idle"))
 			or settings.enabled and ("Camera aim: " .. (aimHeld and (statusState.target or "searching") or "hold right mouse"))
-			or not gameInput and (isArsenal and "Connecting weapon input..." or "Core controls ready; weapon adapter unavailable")
+			or not gameInput and (isArsenal and "Connecting weapon input..." or "Standard Tool adapter ready")
 			or "Weapon input ready"
 	end
 	statusState.paused = not not paused
@@ -6808,6 +6934,11 @@ local function renderStep(dt)
 		)
 	then
 		statusState.phase = "idle"
+		stopAutomation()
+		return
+	end
+	if genericTools and settings.autoplay and not genericTools:GetTool(true) then
+		statusState.phase = "equip a Tool"
 		stopAutomation()
 		return
 	end

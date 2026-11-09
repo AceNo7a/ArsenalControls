@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent
 def build():
     controller = (ROOT / "src/controller.luau").read_text(encoding="utf-8")
     vendor = (ROOT / "vendor/SlimeUI.lua").read_text(encoding="utf-8")
+    adapter = (ROOT / "src/tool-adapter.luau").read_text(encoding="utf-8")
     version = re.search(r'local VERSION = "([^"]+)"', controller).group(1)
     license_text = (ROOT / "licenses/SlimeUI-MIT.txt").read_text(encoding="utf-8")
     controller_license = (ROOT / "LICENSE").read_text(encoding="utf-8")
@@ -18,7 +19,8 @@ def build():
         "-- Controller and bundled SlimeUI licenses follow.\n--[====[\n"
         + controller_license.rstrip() + "\n\nSlimeUI:\n" + license_text.rstrip() + "\n]====]\n"
     )
-    result = banner + "local SlimeUI = (function()\n" + vendor.rstrip() + "\nend)()\n\n" + controller
+    result = banner + "local SlimeUI = (function()\n" + vendor.rstrip() + "\nend)()\n\n"
+    result += "local ToolAdapter = (function()\n" + adapter.rstrip() + "\nend)()\n\n" + controller
     destination = ROOT / "dist/ArsenalControls.lua"
     destination.parent.mkdir(exist_ok=True)
     destination.write_bytes(result.encode("utf-8"))
